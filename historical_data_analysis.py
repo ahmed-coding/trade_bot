@@ -1,63 +1,108 @@
 import requests
 import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+from strategies.fibonacci_strategy_ai import FibonacciStrategyAI
+# استيراد بقية الاستراتيجيات هنا
+
+# class HistoricalDataAnalyzer:
+#     def __init__(self, symbol="BTCUSDT", interval="1d", years=3):
+#         self.symbol = symbol
+#         self.interval = interval
+#         self.years = years
+#         self.data = None
+#         self.strategies = {
+#             "Fibonacci": FibonacciStrategyAI,
+#             # أضف بقية الاستراتيجيات هنا
+#         }
+
+#     def fetch_historical_data(self):
+#         # يجمع البيانات التاريخية لمدة 3 سنوات باستخدام Binance API
+#         end_time = datetime.utcnow()
+#         start_time = end_time - timedelta(days=self.years * 365)
+#         start_time_str = int(start_time.timestamp() * 1000)
+        
+#         url = "https://api.binance.com/api/v3/klines"
+#         params = {
+#             "symbol": self.symbol,
+#             "interval": self.interval,
+#             "startTime": start_time_str,
+#         }
+#         response = requests.get(url, params=params)
+#         data = response.json()
+#         self.data = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume", "close_time", "quote_asset_volume", "number_of_trades", "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"])
+#         self.data["close"] = self.data["close"].astype(float)
+#         print(f"تم جمع البيانات التاريخية بنجاح لآخر {self.years} سنوات")
+
+#     def train_strategies(self):
+#         # تدريب النماذج على البيانات التاريخية
+#         historical_prices = self.data["close"].tolist()
+#         for strategy_name, strategy_class in self.strategies.items():
+#             strategy = strategy_class(historical_prices)
+#             strategy.update_strategy(historical_prices)  # التدريب الأولي
+#             print(f"تم تدريب نموذج {strategy_name} باستخدام بيانات تاريخية")
+import requests
+import pandas as pd
 from datetime import datetime, timedelta
 
-class CurrencySelector:
-    def __init__(self, interval="1d", min_history_days=90):
+class HistoricalDataAnalyzer:
+    def __init__(self, symbol="BTCUSDT", interval="1h", years=3):
+        self.symbol = symbol
         self.interval = interval
-        self.min_history_days = min_history_days
-        self.available_symbols = self.fetch_available_symbols()
-        self.selected_symbols = []
+        self.years = years
+        self.data = pd.DataFrame()
 
-    def fetch_available_symbols(self):
-        """جمع قائمة العملات المتاحة للتداول على Binance"""
-        url = "https://api.binance.com/api/v3/exchangeInfo"
-        response = requests.get(url)
-        data = response.json()
-        symbols = [item["symbol"] for item in data["symbols"] if item["quoteAsset"] == "USDT"]
-        print(f"تم جمع {len(symbols)} عملة من Binance")
-        return symbols
-
-    def fetch_currency_data(self, symbol):
-        """جمع البيانات التاريخية للعملة"""
+    def fetch_historical_data(self):
+        """جمع البيانات التاريخية على فترات باستخدام Binance API"""
         end_time = datetime.utcnow()
-        start_time = end_time - timedelta(days=self.min_history_days)
+        start_time = end_time - timedelta(days=self.years * 365)
         start_time_str = int(start_time.timestamp() * 1000)
         
-        url = "https://api.binance.com/api/v3/klines"
-        params = {
-            "symbol": symbol,
-            "interval": self.interval,
-            "startTime": start_time_str,
-        }
-        response = requests.get(url, params=params)
-        data = response.json()
-        
-        if len(data) < self.min_history_days:
-            print(f"البيانات غير كافية للعملة {symbol}، تحتوي على {len(data)} يوم فقط.")
-            return None
-        
-        df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume", "close_time", "quote_asset_volume", "number_of_trades", "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"])
-        df["close"] = df["close"].astype(float)
-        return df
-
-    def is_currency_suitable(self, df):
-        """تحديد ما إذا كانت العملة مناسبة للتداول بناءً على التحليل"""
-        trend = df["close"].pct_change().mean()
-        volatility = df["close"].pct_change().std()
-        return trend > 0 and volatility < 0.05
-
-    def select_currencies(self, max_currencies=50):
-        """اختيار عدد محدد من العملات للتداول"""
-        for symbol in self.available_symbols:
-            if len(self.selected_symbols) >= max_currencies:
+        while True:
+            # إعداد طلب API لجلب البيانات من فترة معينة
+            url = "https://api.binance.com/api/v3/klines"
+            params = {
+                "symbol": self.symbol,
+                "interval": self.interval,
+                "startTime": start_time_str,
+                "limit": 1000  # الحد الأقصى لكل طلب (1000 نقطة بيانات)
+            }
+            response = requests.get(url, params=params)
+            data = response.json()
+            
+            if not data:
+                # إذا لم يكن هناك بيانات جديدة، يتم التوقف عن التحميل
                 break
-            df = self.fetch_currency_data(symbol)
-            if df is not None and self.is_currency_suitable(df):
-                self.selected_symbols.append(symbol)
-                print(f"تم اختيار العملة {symbol} للتداول")
-        print(f"تم اختيار {len(self.selected_symbols)} عملة للتداول.")
+            
+            # تحويل البيانات إلى DataFrame وإضافتها إلى البيانات الرئيسية
+            temp_df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume", "close_time", "quote_asset_volume", "number_of_trades", "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"])
+            temp_df["close"] = temp_df["close"].astype(float)
+            self.data = pd.concat([self.data, temp_df], ignore_index=True)
+            
+            # تحديث `start_time` إلى وقت آخر نقطة بيانات تم الحصول عليها
+            start_time_str = int(temp_df["timestamp"].iloc[-1]) + 1
+            
+            print(f"تم جمع {len(temp_df)} نقطة بيانات من {self.symbol} حتى الآن. الاستمرار في الجمع...")
 
-    def get_selected_symbols(self):
-        """إرجاع قائمة العملات المختارة"""
-        return self.selected_symbols
+            # التأكد من عدم تجاوز `end_time`
+            if datetime.utcfromtimestamp(start_time_str / 1000) >= end_time:
+                break
+
+        print(f"تم جمع البيانات التاريخية بنجاح لآخر {self.years} سنوات")
+
+    def prepare_data_for_training(self):
+        """إعداد البيانات لاستخدامها في تدريب الاستراتيجيات"""
+        return self.data["close"].tolist()
+
+
+class NewCurrencyAnalyzer:
+    def __init__(self, data, strategies):
+        self.data = data
+        self.strategies = strategies
+
+    def analyze_new_currency(self):
+        # إذا كانت البيانات قصيرة (أقل من 3 أشهر)، يتم تحليل السوق باستخدام استراتيجيات فورية
+        for strategy_name, strategy_class in self.strategies.items():
+            strategy = strategy_class(self.data)
+            if strategy.should_enter_trade():
+                print(f"إشارة تداول للعملة الجديدة بناءً على {strategy_name}")

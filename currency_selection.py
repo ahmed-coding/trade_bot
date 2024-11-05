@@ -3,56 +3,67 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 class CurrencySelector:
-    def __init__(self, symbol, interval="1d", min_history_days=90):
-        self.symbol = symbol
+    def __init__(self, interval="1h", min_history_days=90):
+        """
+        :param interval: الفترة الزمنية للبيانات، سيتم تعيينها على 1h لجمع بيانات كل ساعة
+        :param min_history_days: الحد الأدنى للأيام من البيانات التاريخية المطلوبة (90 يوم تقريبًا 3 أشهر)
+        """
         self.interval = interval
         self.min_history_days = min_history_days
-        self.data = None
+        self.available_symbols = self.fetch_available_symbols()
+        self.selected_symbols = []
 
-    def fetch_currency_data(self):
-        # جمع البيانات التاريخية للعملة باستخدام Binance API
+    def fetch_available_symbols(self):
+        """جمع قائمة العملات المتاحة للتداول على Binance"""
+        url = "https://api.binance.com/api/v3/exchangeInfo"
+        response = requests.get(url)
+        data = response.json()
+        symbols = [item["symbol"] for item in data["symbols"] if item["quoteAsset"] == "USDT"]
+        print(f"تم جمع {len(symbols)} عملة من Binance")
+        return symbols
+
+    def fetch_currency_data(self, symbol):
+        """جمع البيانات التاريخية لكل ساعة للرمز المحدد"""
         end_time = datetime.utcnow()
         start_time = end_time - timedelta(days=self.min_history_days)
         start_time_str = int(start_time.timestamp() * 1000)
         
         url = "https://api.binance.com/api/v3/klines"
         params = {
-            "symbol": self.symbol,
+            "symbol": symbol,
             "interval": self.interval,
             "startTime": start_time_str,
         }
         response = requests.get(url, params=params)
         data = response.json()
         
-        if len(data) < self.min_history_days:
-            print(f"البيانات غير كافية للعملة {self.symbol}، تحتوي على {len(data)} يوم فقط.")
-            return False
+        # التحقق من عدد البيانات للتأكد من توفر الكمية المطلوبة
+        required_data_points = self.min_history_days * 24  # للحصول على بيانات كل ساعة على مدار 90 يوم
+        if len(data) < required_data_points:
+            print(f"البيانات غير كافية للعملة {symbol}، تحتوي على {len(data)} نقطة بيانات فقط.")
+            return None
         
-        self.data = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume", "close_time", "quote_asset_volume", "number_of_trades", "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"])
-        self.data["close"] = self.data["close"].astype(float)
-        print(f"تم جمع البيانات التاريخية للعملة {self.symbol} لمدة {self.min_history_days} يوم")
-        return True
+        df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume", "close_time", "quote_asset_volume", "number_of_trades", "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"])
+        df["close"] = df["close"].astype(float)
+        return df
 
-    def is_currency_suitable(self):
-        # التحقق مما إذا كانت العملة مناسبة بناءً على وجود البيانات
-        sufficient_data = self.fetch_currency_data()
-        if sufficient_data:
-            return self.analyze_currency()
-        else:
-            print(f"العملة {self.symbol} تمتلك بيانات قصيرة المدى وسيتم تحليلها مؤقتًا.")
-            return self.analyze_new_currency()
+    def is_currency_suitable(self, df):
+        """تحديد ما إذا كانت العملة مناسبة للتداول بناءً على التحليل"""
+        trend = df["close"].pct_change().mean()
+        volatility = df["close"].pct_change().std()
+        return trend > 0 and volatility < 0.05
 
-    def analyze_currency(self):
-        # تحليل العملة بناءً على بيانات تتجاوز 3 أشهر
-        trend = self.data["close"].pct_change().mean()  # تحليل بسيط للاتجاه
-        volatility = self.data["close"].pct_change().std()  # حساب التذبذب
-        print(f"تحليل العملة {self.symbol}، الاتجاه: {trend}, التذبذب: {volatility}")
-        
-        return trend > 0 and volatility < 0.05  # مثال على شروط الاختيار
+    def select_currencies(self, max_currencies=50):
+        """اختيار عدد محدد من العملات للتداول"""
+        for symbol in self.available_symbols:
+            if len(self.selected_symbols) >= max_currencies:
+                break
+            df = self.fetch_currency_data(symbol)
+            if df is not None and self.is_currency_suitable(df):
+                self.selected_symbols.append(symbol)
+                print(f"تم اختيار العملة {symbol} للتداول")
+        print(f"تم اختيار {len(self.selected_symbols)} عملة للتداول.")
 
-    def analyze_new_currency(self):
-        # تحليل سريع للعملات التي لا تتجاوز بياناتها 3 أشهر
-        avg_price = self.data["close"].mean() if self.data is not None else 0
-        print(f"تحليل سريع للعملة {self.symbol} بناءً على البيانات القصيرة، متوسط السعر: {avg_price}")
-        
-        return avg_price > 1  # مثال بسيط لشروط العملة الجديدة
+    def get_selected_symbols(self):
+        """إرجاع قائمة العملات المختارة"""
+        return self.selected_symbols

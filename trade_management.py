@@ -16,9 +16,15 @@ class TradeManagement:
         
         # تكوين الاتصال بـ Binance Testnet
         if self.is_virtual:
+            api_key = os.getenv("BINANCE_TESTNET_API_KEY")
+            api_secret = os.getenv("BINANCE_TESTNET_API_SECRET")
             self.client = Client(api_key, api_secret, testnet=True)
+            self.client.API_URL = 'https://testnet.binance.vision/api'
         else:
+            api_key = os.getenv("BINANCE_API_KEY")
+            api_secret = os.getenv("BINANCE_API_SECRET")
             self.client = Client(api_key, api_secret)
+            
 
     def setup_trades_table(self):
         """إنشاء جدول الصفقات إذا لم يكن موجودًا"""

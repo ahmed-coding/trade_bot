@@ -5,3 +5,4 @@ venv-1/
 venv/
 data/
 venv
+.env

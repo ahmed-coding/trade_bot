@@ -3,12 +3,16 @@ from trade_management import TradeManagement
 from historical_data_analysis import HistoricalDataAnalyzer
 from currency_selection import CurrencySelector
 from strategies.fibonacci_strategy_ai import FibonacciStrategyAI
-# استيراد بقية الاستراتيجيات حسب الحاجة
+from dotenv import load_dotenv
+import os
+
+# تحميل المتغيرات البيئية
+load_dotenv()
 
 class TradingBot:
     def __init__(self, is_virtual=True):
         self.account_manager = AccountManagement()
-        self.trade_manager = TradeManagement()
+        self.trade_manager = TradeManagement(is_virtual=is_virtual)
         self.is_virtual = is_virtual
         self.strategies = {
             "Fibonacci": FibonacciStrategyAI,
@@ -22,21 +26,21 @@ class TradingBot:
         balance = 100000 if is_virtual else 1000  # إعدادات وهمية
         risk_level = 0.01
         self.account_manager.create_account(account_type, balance, risk_level)
-        return self.account_manager.get_account_info(1)[0]  # ID الحساب
+        return self.account_manager.get_account_info(1)[0]
 
     def select_currencies(self, max_currencies=50):
         selector = CurrencySelector()
         selector.select_currencies(max_currencies)
         self.selected_currencies = selector.get_selected_symbols()
 
-    def run_strategy(self, strategy_name, data, symbol):
+    def run_strategy(self, strategy_name, data, symbol, quantity=0.001):
         strategy_class = self.strategies.get(strategy_name)
         if strategy_class:
             strategy = strategy_class(data)
             if strategy.should_enter_trade():
                 confirmations = self.get_confirmations(strategy.trade_type, data)
                 if confirmations >= 2:
-                    self.trade_manager.open_trade(symbol, data[-1], strategy_name)
+                    self.trade_manager.open_trade(symbol, strategy.trade_type, quantity)
                     print(f"تم فتح صفقة على {symbol} بناءً على استراتيجية {strategy_name}")
 
     def get_confirmations(self, trade_type, data):
@@ -49,8 +53,7 @@ class TradingBot:
 
     def execute_trading_cycle(self):
         for currency in self.selected_currencies:
-            # جمع البيانات التاريخية للعملة
-            analyzer = HistoricalDataAnalyzer(symbol=currency, interval="1d", years=1)
+            analyzer = HistoricalDataAnalyzer(symbol=currency)
             analyzer.fetch_historical_data()
             data = analyzer.prepare_data_for_training()
             
