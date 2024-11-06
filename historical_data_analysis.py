@@ -46,58 +46,61 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 class HistoricalDataAnalyzer:
-    def __init__(self, symbol="BTCUSDT", interval="1h", min_history_days=30):
+    def __init__(self, symbol="BTCUSDT", intervals=["1h", "4h", "1d"], min_history_days=30):
         self.symbol = symbol
-        self.interval = interval
+        self.intervals = intervals
         self.min_history_days = min_history_days
-        self.data = pd.DataFrame()
+        self.data = {}
 
     def fetch_historical_data(self):
-        """جمع البيانات التاريخية للرمز المحدد"""
-        end_time = datetime.utcnow()
-        start_time = end_time - timedelta(days=self.min_history_days)
-        start_time_str = int(start_time.timestamp() * 1000)
-        
-        # الاسترجاع المتكرر حتى نحصل على بيانات كافية
-        while True:
-            url = "https://api.binance.com/api/v3/klines"
-            params = {
-                "symbol": self.symbol,
-                "interval": self.interval,
-                "startTime": start_time_str,
-                "limit": 1000  # الحد الأقصى لكل طلب
-            }
-            response = requests.get(url, params=params)
-            data = response.json()
-            
-            # إذا لم يكن هناك بيانات جديدة، يتم التوقف
-            if not data:
-                break
-            
-            # إضافة البيانات الجديدة إلى DataFrame
-            temp_df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume", "close_time", "quote_asset_volume", "number_of_trades", "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"])
-            temp_df["close"] = temp_df["close"].astype(float)
-            self.data = pd.concat([self.data, temp_df], ignore_index=True)
-            
-            # تحديث `start_time` إلى وقت آخر نقطة تم جلبها
-            start_time_str = int(temp_df["timestamp"].iloc[-1]) + 1
-            
-            # التأكد من عدم تجاوز المدى الزمني
-            if datetime.utcfromtimestamp(start_time_str / 1000) >= end_time:
-                break
+        """جمع البيانات التاريخية للرمز المحدد عبر عدة أطر زمنية"""
+        for interval in self.intervals:
+            end_time = datetime.utcnow()
+            start_time = end_time - timedelta(days=self.min_history_days)
+            start_time_str = int(start_time.timestamp() * 1000)
+            all_data = []
 
-        print(f"تم جمع البيانات التاريخية بنجاح للرمز {self.symbol} لمدة {self.min_history_days} يوم")
+            while True:
+                url = "https://api.binance.com/api/v3/klines"
+                params = {
+                    "symbol": self.symbol,
+                    "interval": interval,
+                    "startTime": start_time_str,
+                    "limit": 1000
+                }
+                response = requests.get(url, params=params)
+                data = response.json()
 
-    def prepare_data_for_training(self):
-        """تحضير البيانات لاستخدامها في الاستراتيجيات"""
-        if self.data.empty:
-            print("لم يتم جمع بيانات كافية")
-            return None
-        return self.data[["timestamp", "open", "high", "low", "close", "volume"]]
+                if not data:
+                    break
 
-    def get_close_prices(self):
-        """إرجاع أسعار الإغلاق فقط للاستخدام في تحليل الاستراتيجيات"""
-        return self.data["close"].tolist() if not self.data.empty else []
+                all_data.extend(data)
+                start_time_str = data[-1][0] + 1
+
+                if len(all_data) >= self.min_history_days * 24:
+                    break
+
+            # تحديد الحد الأدنى للبيانات المطلوبة بناءً على الإطار الزمني
+            required_points = self.min_history_days * (24 if interval == "1h" else (6 if interval == "4h" else 1)) * 0.8
+            if len(all_data) < required_points:
+                print(f"البيانات غير كافية للرمز {self.symbol} للإطار {interval}")
+                self.data[interval] = None
+            else:
+                df = pd.DataFrame(all_data, columns=["timestamp", "open", "high", "low", "close", "volume", 
+                                                     "close_time", "quote_asset_volume", "number_of_trades", 
+                                                     "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", 
+                                                     "ignore"])
+                df["close"] = df["close"].astype(float)
+                self.data[interval] = df
+                print(f"تم جمع البيانات التاريخية للإطار {interval} بنجاح.")
+
+    def get_data_for_training(self):
+        """إرجاع البيانات لجميع الأطر الزمنية الصالحة للاستخدام في التدريب"""
+        return {interval: df for interval, df in self.data.items() if df is not None}
+
+    def get_close_prices(self, interval):
+        """إرجاع أسعار الإغلاق للإطار المحدد إذا كانت البيانات متوفرة"""
+        return self.data[interval]["close"].tolist() if self.data.get(interval) is not None else []
 
 
 class NewCurrencyAnalyzer:

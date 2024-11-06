@@ -5,8 +5,8 @@ import numpy as np
 
 class DivergenceStrategyAI:
     def __init__(self, data, volumes, trade_type="short_term"):
-        self.data = data
-        self.volumes = volumes
+        self.data = [float(value) for value in data]
+        self.volumes = [float(volume) for volume in volumes]
         self.trade_type = trade_type
         self.model = None
         self.model_path = os.path.join("models", "divergence_model.pkl")
@@ -26,6 +26,10 @@ class DivergenceStrategyAI:
         features = np.array([[self.data[i] - self.data[i-1], self.volumes[i] - self.volumes[i-1]] for i in range(1, len(self.data))])
         labels = np.array([1 if features[i][0] * features[i][1] > 0 else 0 for i in range(len(features))])
 
+        if len(set(labels)) < 2:
+            print("تنبيه: البيانات تحتوي على فئة واحدة فقط في labels، غير كافية للتدريب.")
+            return
+
         self.model = SVC()
         self.model.fit(features, labels)
 
@@ -38,6 +42,6 @@ class DivergenceStrategyAI:
         return divergence > 0 if self.trade_type == "short_term" else divergence < 0
 
     def update_strategy(self, new_data, new_volumes):
-        self.data.extend(new_data)
-        self.volumes.extend(new_volumes)
+        self.data.extend([float(value) for value in new_data])
+        self.volumes.extend([float(volume) for volume in new_volumes])
         self.train_model()

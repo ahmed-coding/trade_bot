@@ -17,23 +17,28 @@ class VolumeIndicatorsStrategyAI:
         else:
             self.train_model()
 
-    def calculate_volume_trend(self):
-        return np.corrcoef(self.data[-10:], self.volumes[-10:])[0, 1]
-
     def train_model(self):
-        features = np.array(self.volumes[-10:]).reshape(-1, 1)
-        labels = np.array([1 if self.data[i] > self.data[i-1] else 0 for i in range(1, len(self.data))])
-        
-        self.model = SVR()
-        self.model.fit(features, labels)
-        
-        with open(self.model_path, "wb") as file:
-            pickle.dump(self.model, file)
-        print("تم تدريب وحفظ نموذج Volume Indicators بنجاح")
+        # التأكد من طول البيانات وتفادي أي أخطاء في الأبعاد
+        min_length = min(len(self.data), len(self.volumes)) - 1
+        features = np.array([[self.data[i], self.volumes[i]] for i in range(min_length)])
+        labels = np.array([1 if self.data[i + 1] > self.data[i] else 0 for i in range(min_length)])
+
+        # التأكد من توافق طول features و labels
+        if len(features) == len(labels) and len(features) > 0:
+            self.model = SVR()
+            self.model.fit(features, labels)
+            with open(self.model_path, "wb") as file:
+                pickle.dump(self.model, file)
+            print("تم تدريب وحفظ نموذج Volume Indicators بنجاح")
+        else:
+            print("تنبيه: البيانات تحتوي على عدد غير متساوٍ من features و labels. التدريب غير ممكن.")
 
     def should_enter_trade(self):
-        volume_trend = self.calculate_volume_trend()
-        return volume_trend > 0.5 if self.trade_type == "short_term" else volume_trend < 0.5
+        if len(self.data) > 0 and len(self.volumes) > 0:
+            recent_data = np.array([[self.data[-1], self.volumes[-1]]]).reshape(1, -1)
+            prediction = self.model.predict(recent_data)[0]
+            return prediction > 0
+        return False
 
     def update_strategy(self, new_data, new_volumes):
         self.data.extend(new_data)

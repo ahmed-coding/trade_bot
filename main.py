@@ -1,7 +1,7 @@
 import os
 import importlib
 from account_management import AccountManagement
-from trade_management import TradeManagement
+from trade_management.trade_management import TradeManagement
 from historical_data_analysis import HistoricalDataAnalyzer
 from currency_selection import CurrencySelector
 from dotenv import load_dotenv
@@ -16,14 +16,14 @@ class TradingBot:
         self.is_virtual = is_virtual
         self.strategies = self.load_strategies()
         self.selected_currencies = []
-        self.account_id = self.setup_account(is_virtual)
+        self.account_id, _, _, _ = self.setup_account(is_virtual)
+              
 
     def setup_account(self, is_virtual):
         account_type = "virtual" if is_virtual else "real"
-        balance = 100000 if is_virtual else 1000  # إعدادات وهمية
+        balance = 10000 if is_virtual else 1000  # إعدادات وهمية
         risk_level = 0.01
-        self.account_manager.create_account(account_type, balance, risk_level)
-        return self.account_manager.get_account_info(1)[0]
+        return self.account_manager.get_or_create_account(account_type, balance, risk_level)
 
     def load_strategies(self):
         """تحميل الاستراتيجيات ديناميكيًا من مجلد الاستراتيجيات"""
@@ -73,42 +73,85 @@ class TradingBot:
         selector.select_currencies(max_currencies)
         self.selected_currencies = selector.get_selected_symbols()
 
-    def run_strategy(self, strategy_name, data, symbol, quantity=0.001):
+    def run_strategy(self, strategy_name, data, symbol, volumes=None, moon_phase=None, quantity=0.001):
         strategy_class = self.strategies.get(strategy_name)
         if strategy_class:
-            strategy = strategy_class(data)
+            support_level = min(data)  # مثال على تعيين مستوى دعم افتراضي
+            resistance_level = max(data)  # مثال على تعيين مستوى مقاومة افتراضي
+
+            if volumes is not None and 'volumes' in strategy_class.__init__.__code__.co_varnames:
+                strategy = strategy_class(data, volumes)
+            elif moon_phase is not None and 'moon_phase' in strategy_class.__init__.__code__.co_varnames:
+                strategy = strategy_class(data, moon_phase)
+            elif 'support_level' in strategy_class.__init__.__code__.co_varnames and 'resistance_level' in strategy_class.__init__.__code__.co_varnames:
+                strategy = strategy_class(data, support_level, resistance_level)
+            elif strategy_class.__name__ == "VolumeIndicatorsStrategyAI" and volumes is not None:
+                strategy = strategy_class(data, volumes)
+            else:
+                strategy = strategy_class(data)
+            
+            strategy.train_model()
             if strategy.should_enter_trade():
-                confirmations = self.get_confirmations(strategy.trade_type, data)
+                confirmations = self.get_confirmations(strategy.trade_type, data, volumes=volumes, moon_phase=moon_phase)
                 if confirmations >= 2:
                     self.trade_manager.open_trade(symbol, strategy.trade_type, quantity)
                     print(f"تم فتح صفقة على {symbol} بناءً على استراتيجية {strategy_name}")
 
-    def get_confirmations(self, trade_type, data):
+                    
+
+    def get_confirmations(self, trade_type, data, volumes=None, moon_phase=None):
         confirmations = 0
+
+        support_level = min(data)  # مثال على تعيين مستوى دعم افتراضي
+        resistance_level = max(data)  # مثال على تعيين مستوى مقاومة افتراضي
+
         for strategy_name, strategy_class in self.strategies.items():
-            strategy = strategy_class(data)
+            if strategy_class.__name__ == "DivergenceStrategyAI" and volumes is not None:
+                strategy = strategy_class(data, volumes)
+            elif strategy_class.__name__ == "MoonPhasesStrategyAI" and moon_phase is not None:
+                strategy = strategy_class(data, moon_phase)
+            elif strategy_class.__name__ == "SupportResistanceStrategyAI":
+                strategy = strategy_class(data, support_level, resistance_level)
+            elif strategy_class.__name__ == "VolumeIndicatorsStrategyAI" and volumes is not None:
+                strategy = strategy_class(data, volumes)
+            else:
+                strategy = strategy_class(data)
+
             if strategy.trade_type == trade_type and strategy.should_enter_trade():
                 confirmations += 1
+
         return confirmations
+
 
     def execute_trading_cycle(self):
         for currency in self.selected_currencies:
-            analyzer = HistoricalDataAnalyzer(symbol=currency, interval="1h", min_history_days=30)
+            analyzer = HistoricalDataAnalyzer(symbol=currency)
             analyzer.fetch_historical_data()
-            data = analyzer.prepare_data_for_training()
+            data = analyzer.get_data_for_training()
 
             if data is None:
                 print(f"البيانات غير كافية للرمز {currency}، تجاوز التحليل.")
                 continue
 
-            # اختيار عمود الإغلاق فقط لتغذية الاستراتيجيات
-            close_prices = data["close"].tolist()  # تحويل أسعار الإغلاق إلى قائمة
+            for interval in analyzer.intervals:
+                print(f"تحليل البيانات للرمز {currency}، الإطار الزمني: {interval}")
+                close_prices = analyzer.get_close_prices(interval)
+                volumes = data[interval]["volume"].tolist() if "volume" in data[interval].columns else None
 
-            for strategy_name in self.strategies.keys():
-                self.run_strategy(strategy_name, close_prices, currency)
+                for strategy_name in self.strategies.keys():
+                    self.run_strategy(strategy_name, close_prices, currency, volumes=volumes)
+            
+        # تحليل الأداء بعد كل دورة
+        self.trade_manager.analyze_performance()
         print("دورة التداول اكتملت.")
+
+
+    def improve_all_strategies(self):
+        for strategy in self.strategies.values():
+            self.trade_manager.improve_strategies(strategy)
+
 
 if __name__ == "__main__":
     bot = TradingBot(is_virtual=True)
-    bot.select_currencies(max_currencies=5)  # اختيار العملات بشكل ديناميكي
+    bot.select_currencies(max_currencies=1)  # اختيار العملات بشكل ديناميكي
     bot.execute_trading_cycle()  # بدء التداول
