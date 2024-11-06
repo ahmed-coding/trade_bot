@@ -14,7 +14,7 @@ cursor.execute('''
         profit_loss REAL,
         trade_type TEXT,
         trade_duration TEXT,
-        strategy_name TEXT,  -- إضافة العمود لتسجيل اسم الاستراتيجية
+        strategy_name TEXT, 
         status TEXT,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )

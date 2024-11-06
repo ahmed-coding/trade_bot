@@ -19,7 +19,7 @@ class CurrencySelector:
         url = "https://api.binance.com/api/v3/exchangeInfo"
         response = requests.get(url)
         data = response.json()
-        symbols = [item["symbol"] for item in data["symbols"] if item["quoteAsset"] == "USDT"]
+        symbols = [item["symbol"] for item in data["symbols"] if item["quoteAsset"] == "USDC"]
         print(f"تم جمع {len(symbols)} عملة من Binance")
         return symbols
 

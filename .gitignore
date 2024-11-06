@@ -6,3 +6,4 @@ venv/
 data/
 venv
 .env
+main-2.py
