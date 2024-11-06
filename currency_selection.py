@@ -3,10 +3,10 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 class CurrencySelector:
-    def __init__(self, interval="1h", min_history_days=90):
+    def __init__(self, interval="1h", min_history_days=30):
         """
-        :param interval: الفترة الزمنية للبيانات، سيتم تعيينها على 1h لجمع بيانات كل ساعة
-        :param min_history_days: الحد الأدنى للأيام من البيانات التاريخية المطلوبة (90 يوم تقريبًا 3 أشهر)
+        :param interval: الفترة الزمنية للبيانات، تم تعيينها على 1h لجمع بيانات كل ساعة
+        :param min_history_days: الحد الأدنى من الأيام للبيانات المطلوبة. يمكن تعديله لزيادة المرونة
         """
         self.interval = interval
         self.min_history_days = min_history_days
@@ -33,13 +33,14 @@ class CurrencySelector:
             "symbol": symbol,
             "interval": self.interval,
             "startTime": start_time_str,
+            "limit": 1000  # الحد الأقصى لكل طلب (1000 نقطة بيانات)
         }
         response = requests.get(url, params=params)
         data = response.json()
         
-        # التحقق من عدد البيانات للتأكد من توفر الكمية المطلوبة
-        required_data_points = self.min_history_days * 24  # للحصول على بيانات كل ساعة على مدار 90 يوم
-        if len(data) < required_data_points:
+        # التحقق من عدد البيانات لتوفير الكمية المطلوبة بمرونة
+        minimum_required_points = self.min_history_days * 24  # حساب البيانات المطلوبة لعدد الأيام
+        if len(data) < minimum_required_points and len(data) < 500:  # السماح بمرونة مع 500 نقطة
             print(f"البيانات غير كافية للعملة {symbol}، تحتوي على {len(data)} نقطة بيانات فقط.")
             return None
         

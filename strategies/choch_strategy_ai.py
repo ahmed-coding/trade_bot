@@ -3,7 +3,7 @@ import pickle
 from sklearn.neural_network import MLPClassifier
 import numpy as np
 
-class CHoCHStrategyAI:
+class ChochStrategyAI:
     def __init__(self, data, trade_type="short_term"):
         self.data = data
         self.trade_type = trade_type
