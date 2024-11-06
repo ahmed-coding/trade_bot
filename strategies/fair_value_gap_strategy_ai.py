@@ -4,6 +4,8 @@ from sklearn.linear_model import LinearRegression
 import numpy as np
 
 class FairValueGapStrategyAI:
+    timeframe = 'short'
+    
     def __init__(self, data, trade_type="short"):
         self.data = data
         self.trade_type = trade_type

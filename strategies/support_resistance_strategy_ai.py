@@ -4,6 +4,7 @@ from sklearn.linear_model import LogisticRegression
 import numpy as np
 
 class SupportResistanceStrategyAI:
+    timeframe = 'long'
     def __init__(self, data, support_level, resistance_level, trade_type="long"):
         self.data = data
         self.support_level = support_level

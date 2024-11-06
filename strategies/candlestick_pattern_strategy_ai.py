@@ -4,6 +4,7 @@ from sklearn.neural_network import MLPClassifier
 import numpy as np
 
 class CandlestickPatternStrategyAI:
+    timeframe = 'short'
     def __init__(self, data, trade_type="short"):
         # تحويل البيانات إلى قائمة من القيم العددية لضمان أن تكون أعدادًا صحيحة
         self.data = [float(value) for value in data]

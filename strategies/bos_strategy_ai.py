@@ -4,8 +4,10 @@ import pickle
 import os
 
 class BosStrategyAI:
+    timeframe = 'short'
     def __init__(self, data, trade_type="short"):
         self.data = [float(value) for value in data]
+        self.trade_type = trade_type
         self.trade_type = trade_type
         self.model = None
         self.model_path = os.path.join("models", "bos_model.pkl")

@@ -4,6 +4,7 @@ from sklearn.tree import DecisionTreeClassifier
 import numpy as np
 
 class MarketStructureStrategyAI:
+    timeframe = 'short'
     def __init__(self, data, trade_type="short"):
         self.data = data
         self.trade_type = trade_type

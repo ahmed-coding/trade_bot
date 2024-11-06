@@ -10,14 +10,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class TradingBot:
-    def __init__(self, is_virtual=True):
+    def __init__(self, is_virtual=True, enable_short_term=True, enable_long_term=True):
+        # إضافة إعدادات الصفقات قصيرة وطويلة المدى
+        self.enable_short_term = enable_short_term
+        self.enable_long_term = enable_long_term
         self.account_manager = AccountManagement()
         self.trade_manager = TradeManagement(is_virtual=is_virtual)
         self.is_virtual = is_virtual
         self.strategies = self.load_strategies()
         self.selected_currencies = []
         self.account_id, _, _, _ = self.setup_account(is_virtual)
-              
+
 
     def setup_account(self, is_virtual):
         account_type = "virtual" if is_virtual else "real"
@@ -79,6 +82,19 @@ class TradingBot:
             support_level = min(data)  # مثال على تعيين مستوى دعم افتراضي
             resistance_level = max(data)  # مثال على تعيين مستوى مقاومة افتراضي
 
+    
+    # تحقق من نوع الاستراتيجية وطابقها مع الإعدادات
+            is_short_term = strategy_class.trade_type == 'short'
+            is_long_term = strategy_class.trade_type == 'long'
+            
+            if (is_short_term and not self.enable_short_term) or (is_long_term and not self.enable_long_term):
+                print(f"تجاوز تنفيذ {strategy_name}؛ ليس ضمن الصفقات المحددة.")
+                return
+
+            # تنفيذ باقي عملية تشغيل الاستراتيجية بناءً على الإعدادات المتوفرة
+            support_level = min(data)
+            resistance_level = max(data)
+
             if volumes is not None and 'volumes' in strategy_class.__init__.__code__.co_varnames:
                 strategy = strategy_class(data, volumes)
             elif moon_phase is not None and 'moon_phase' in strategy_class.__init__.__code__.co_varnames:
@@ -117,8 +133,12 @@ class TradingBot:
             else:
                 strategy = strategy_class(data)
 
+            if (trade_type == 'short' and not self.enable_short_term) or (trade_type == 'long' and not self.enable_long_term):
+                continue
+            
             if strategy.trade_type == trade_type and strategy.should_enter_trade():
                 confirmations += 1
+                
 
         return confirmations
 

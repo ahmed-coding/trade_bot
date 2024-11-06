@@ -4,6 +4,7 @@ from sklearn.svm import SVC
 import numpy as np
 
 class HeikinAshiStrategyAI:
+    timeframe = 'long'
     def __init__(self, data, trade_type="long"):
         self.data = data
         self.trade_type = trade_type

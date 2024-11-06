@@ -4,6 +4,7 @@ from sklearn.linear_model import LogisticRegression
 import numpy as np
 
 class MomentumIndicatorsStrategyAI:
+    timeframe = 'short'
     def __init__(self, data, trade_type="short"):
         self.data = data
         self.trade_type = trade_type

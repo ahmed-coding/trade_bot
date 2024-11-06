@@ -4,6 +4,7 @@ from sklearn.linear_model import LinearRegression
 import numpy as np
 
 class TrendLinesStrategyAI:
+    timeframe = 'long'
     def __init__(self, data, trade_type="long"):
         self.data = data
         self.trade_type = trade_type

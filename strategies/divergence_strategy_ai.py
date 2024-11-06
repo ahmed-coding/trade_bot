@@ -4,6 +4,8 @@ from sklearn.svm import SVC
 import numpy as np
 
 class DivergenceStrategyAI:
+    timeframe = 'long'
+
     def __init__(self, data, volumes, trade_type="long"):
         self.data = [float(value) for value in data]
         self.volumes = [float(volume) for volume in volumes]
