@@ -4,7 +4,7 @@ from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 
 class HarmonicPatternsStrategyAI:
-    def __init__(self, data, trade_type="short_term"):
+    def __init__(self, data, trade_type="long"):
         self.data = data
         self.trade_type = trade_type
         self.model = None

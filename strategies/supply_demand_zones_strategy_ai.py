@@ -4,7 +4,7 @@ from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
 class SupplyDemandZonesStrategyAI:
-    def __init__(self, data, trade_type="short_term"):
+    def __init__(self, data, trade_type="long"):
         self.data = data
         self.trade_type = trade_type
         self.model = None

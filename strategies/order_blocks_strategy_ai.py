@@ -4,7 +4,7 @@ from sklearn.ensemble import AdaBoostClassifier
 import numpy as np
 
 class OrderBlocksStrategyAI:
-    def __init__(self, data, trade_type="short_term"):
+    def __init__(self, data, trade_type="long"):
         self.data = data
         self.trade_type = trade_type
         self.model = None

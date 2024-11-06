@@ -4,7 +4,7 @@ from sklearn.neural_network import MLPClassifier
 import numpy as np
 
 class ChochStrategyAI:
-    def __init__(self, data, trade_type="short_term"):
+    def __init__(self, data, trade_type="short"):
         self.data = data
         self.trade_type = trade_type
         self.model = None

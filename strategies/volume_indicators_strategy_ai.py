@@ -4,7 +4,7 @@ from sklearn.svm import SVR
 import numpy as np
 
 class VolumeIndicatorsStrategyAI:
-    def __init__(self, data, volumes, trade_type="short_term"):
+    def __init__(self, data, volumes, trade_type="short"):
         self.data = data
         self.volumes = volumes
         self.trade_type = trade_type

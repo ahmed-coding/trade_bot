@@ -4,7 +4,7 @@ from sklearn.tree import DecisionTreeClassifier
 import numpy as np
 
 class BreakoutPatternStrategyAI:
-    def __init__(self, data, trade_type="short_term"):
+    def __init__(self, data, trade_type="short"):
         self.data = data
         self.trade_type = trade_type
         self.model = None

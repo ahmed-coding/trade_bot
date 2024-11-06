@@ -4,7 +4,7 @@ from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
 class OscillatorsStrategyAI:
-    def __init__(self, data, trade_type="short_term"):
+    def __init__(self, data, trade_type="short"):
         self.data = data
         self.trade_type = trade_type
         self.model = None

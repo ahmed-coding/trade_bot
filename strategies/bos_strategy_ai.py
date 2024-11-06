@@ -4,7 +4,7 @@ import pickle
 import os
 
 class BosStrategyAI:
-    def __init__(self, data, trade_type="short_term"):
+    def __init__(self, data, trade_type="short"):
         self.data = [float(value) for value in data]
         self.trade_type = trade_type
         self.model = None

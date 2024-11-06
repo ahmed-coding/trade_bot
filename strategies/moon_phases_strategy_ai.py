@@ -6,7 +6,7 @@ import ephem
 from datetime import datetime
 
 class MoonPhasesStrategyAI:
-    def __init__(self, data, trade_type="short_term"):
+    def __init__(self, data, trade_type="long"):
         self.data = data
         self.moon_phase = self.get_moon_phase()  # احصل على مرحلة القمر الحالية بدقة عالية
         self.trade_type = trade_type

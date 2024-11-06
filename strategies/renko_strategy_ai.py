@@ -4,7 +4,7 @@ from sklearn.linear_model import Ridge
 import numpy as np
 
 class RenkoStrategyAI:
-    def __init__(self, data, brick_size=10, trade_type="short_term"):
+    def __init__(self, data, brick_size=10, trade_type="long"):
         self.data = data
         self.brick_size = brick_size
         self.trade_type = trade_type
