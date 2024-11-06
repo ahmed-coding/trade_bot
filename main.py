@@ -84,8 +84,8 @@ class TradingBot:
 
     
     # تحقق من نوع الاستراتيجية وطابقها مع الإعدادات
-            is_short_term = strategy_class.trade_type == 'short'
-            is_long_term = strategy_class.trade_type == 'long'
+            is_short_term = strategy_class.timeframe == 'short'
+            is_long_term = strategy_class.timeframe == 'long'
             
             if (is_short_term and not self.enable_short_term) or (is_long_term and not self.enable_long_term):
                 print(f"تجاوز تنفيذ {strategy_name}؛ ليس ضمن الصفقات المحددة.")
@@ -108,9 +108,9 @@ class TradingBot:
             
             strategy.train_model()
             if strategy.should_enter_trade():
-                confirmations = self.get_confirmations(strategy.trade_type, data, volumes=volumes, moon_phase=moon_phase)
+                confirmations = self.get_confirmations(strategy.timeframe, data, volumes=volumes, moon_phase=moon_phase)
                 if confirmations >= 2:
-                    self.trade_manager.open_trade(symbol, strategy.trade_type, quantity)
+                    self.trade_manager.open_trade(symbol, strategy.timeframe, quantity)
                     print(f"تم فتح صفقة على {symbol} بناءً على استراتيجية {strategy_name}")
 
                     
@@ -136,7 +136,7 @@ class TradingBot:
             if (trade_type == 'short' and not self.enable_short_term) or (trade_type == 'long' and not self.enable_long_term):
                 continue
             
-            if strategy.trade_type == trade_type and strategy.should_enter_trade():
+            if strategy.timeframe == trade_type and strategy.should_enter_trade():
                 confirmations += 1
                 
 
