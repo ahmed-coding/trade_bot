@@ -8,6 +8,7 @@ class TradeManagement:
         self.conn = sqlite3.connect(db_name, check_same_thread=False)
         self.cursor = self.conn.cursor()
         self.setup_tables()
+        self.setup_performance_table()
         self.is_virtual = is_virtual
         self.account_id = self.get_or_create_account(is_virtual)  # الحصول على حساب موجود أو إنشاؤه
 
@@ -30,18 +31,20 @@ class TradeManagement:
             )
         ''')
         self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS Trades (
-                trade_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    CREATE TABLE IF NOT EXISTS Trades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 symbol TEXT,
                 entry_price REAL,
                 exit_price REAL,
                 profit_loss REAL,
                 trade_type TEXT,
+                trade_duration TEXT,
+                strategy_name TEXT,  -- إضافة العمود لتسجيل اسم الاستراتيجية
                 status TEXT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                account_id INTEGER
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
         self.conn.commit()
 
     def get_or_create_account(self, is_virtual):
@@ -67,20 +70,20 @@ class TradeManagement:
 
 
 
-    def open_trade(self, symbol, trade_type, quantity):
-        """فتح صفقة جديدة على testnet"""
+    def open_trade(self, symbol, trade_type, quantity, strategy_name):
+        """فتح صفقة جديدة على testnet مع تسجيل اسم الاستراتيجية"""
         try:
             order = self.client.order_market_buy(symbol=symbol, quantity=quantity)
             entry_price = float(order['fills'][0]['price'])
             self.cursor.execute('''
-                INSERT INTO Trades (symbol, entry_price, trade_type, status, account_id)
-                VALUES (?, ?, ?, 'open', ?)
-            ''', (symbol, entry_price, trade_type, self.account_id))
+                INSERT INTO Trades (symbol, entry_price, trade_type, strategy_name, status)
+                VALUES (?, ?, ?, ?, 'open')
+            ''', (symbol, entry_price, trade_type, strategy_name))
             self.conn.commit()
-            print(f"تم فتح صفقة جديدة على {symbol} بسعر دخول {entry_price}")
+            print(f"تم فتح صفقة جديدة على {symbol} بسعر دخول {entry_price} باستخدام الاستراتيجية {strategy_name}")
         except Exception as e:
             print(f"خطأ أثناء فتح الصفقة: {e}")
-            
+
             
             
     def close_trade(self, trade_id, symbol, quantity):
@@ -108,9 +111,27 @@ class TradeManagement:
         self.cursor.execute('SELECT * FROM Trades WHERE status = "closed" AND account_id = ?', (self.account_id,))
         return self.cursor.fetchall()
 
-    def analyze_performance(self):
-        """تحليل الصفقات المغلقة وتخزين الأداء في جدول الأداء التاريخي."""
-        self.cursor.execute("SELECT profit_loss FROM Trades WHERE status = 'closed' AND account_id = ?", (self.account_id,))
+    def setup_performance_table(self):
+        """إعداد جدول الأداء"""
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Performance (
+                performance_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                strategy_name TEXT,
+                total_profit_loss REAL,
+                average_profit REAL,
+                average_loss REAL,
+                win_rate REAL,
+                total_trades INTEGER,
+                profitable_trades INTEGER,
+                unprofitable_trades INTEGER,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        self.conn.commit()
+
+    def analyze_performance(self, strategy_name):
+        """تحليل الصفقات المغلقة لتحديث أداء الاستراتيجيات"""
+        self.cursor.execute("SELECT profit_loss FROM Trades WHERE status = 'closed' AND strategy_name = ?", (strategy_name,))
         closed_trades = self.cursor.fetchall()
         
         if not closed_trades:
@@ -119,7 +140,6 @@ class TradeManagement:
 
         profits = [trade[0] for trade in closed_trades if trade[0] > 0]
         losses = [trade[0] for trade in closed_trades if trade[0] <= 0]
-
         total_trades = len(closed_trades)
         total_profit_loss = sum(profits) + sum(losses)
         average_profit = sum(profits) / len(profits) if profits else 0
@@ -128,8 +148,15 @@ class TradeManagement:
         profitable_trades = len(profits)
         unprofitable_trades = len(losses)
 
-        print(f"تم تحليل الأداء: إجمالي الربح/الخسارة: {total_profit_loss}, نسبة النجاح: {win_rate:.2%}")
+        # تسجيل الأداء في جدول Performance
+        self.cursor.execute('''
+            INSERT INTO Performance (strategy_name, total_profit_loss, average_profit, average_loss, win_rate, 
+                                     total_trades, profitable_trades, unprofitable_trades)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (strategy_name, total_profit_loss, average_profit, average_loss, win_rate, total_trades, profitable_trades, unprofitable_trades))
+        self.conn.commit()
 
+        print(f"تم تحليل الأداء للاستراتيجية {strategy_name} وتخزين النتائج.")
     def __del__(self):
         """إغلاق الاتصال بقاعدة البيانات عند الانتهاء"""
         self.conn.close()

@@ -110,7 +110,7 @@ class TradingBot:
             if strategy.should_enter_trade():
                 confirmations = self.get_confirmations(strategy.timeframe, data, volumes=volumes, moon_phase=moon_phase)
                 if confirmations >= 2:
-                    self.trade_manager.open_trade(symbol, strategy.timeframe, quantity)
+                    self.trade_manager.open_trade(symbol, strategy.trade_type, quantity, strategy_name)
                     print(f"تم فتح صفقة على {symbol} بناءً على استراتيجية {strategy_name}")
 
                     
@@ -162,13 +162,40 @@ class TradingBot:
                     self.run_strategy(strategy_name, close_prices, currency, volumes=volumes)
             
         # تحليل الأداء بعد كل دورة
-        self.trade_manager.analyze_performance()
+        # self.trade_manager.analyze_performance()
+        self.improve_strategies()
         print("دورة التداول اكتملت.")
 
 
     def improve_all_strategies(self):
         for strategy in self.strategies.values():
             self.trade_manager.improve_strategies(strategy)
+
+    def improve_strategies(self):
+        """تحسين الاستراتيجيات بناءً على نتائج الأداء"""
+        for strategy_name in self.strategies.keys():
+            self.trade_manager.analyze_performance(strategy_name)
+            
+            # الحصول على البيانات لتحليل الأداء من جدول Performance
+            self.trade_manager.cursor.execute("SELECT average_profit, average_loss, win_rate FROM Performance WHERE strategy_name = ? ORDER BY timestamp DESC LIMIT 1", (strategy_name,))
+            performance = self.trade_manager.cursor.fetchone()
+            
+            if not performance:
+                continue
+
+            average_profit, average_loss, win_rate = performance
+            
+            # تحسين المعلمات بناءً على الأداء
+            strategy = self.strategies[strategy_name]
+            
+            if win_rate < 0.5:
+                strategy.adjust_parameters(risk_level=0.01)
+                print(f"تحسين الاستراتيجية {strategy_name} بناءً على نسبة نجاح منخفضة.")
+            elif average_profit > abs(average_loss):
+                strategy.adjust_parameters(risk_level=0.02)
+                print(f"تحسين الاستراتيجية {strategy_name} لتحقيق ربح أكبر.")
+            else:
+                print(f"لا حاجة لتحسينات إضافية في الاستراتيجية {strategy_name}.")
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ cursor.execute('''
         profit_loss REAL,
         trade_type TEXT,
         trade_duration TEXT,
+        strategy_name TEXT,  -- إضافة العمود لتسجيل اسم الاستراتيجية
         status TEXT,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -45,6 +46,21 @@ cursor.execute('''
         symbol TEXT PRIMARY KEY,
         historical_data TEXT,
         analysis_score REAL
+    )
+''')
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS Performance (
+        performance_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        strategy_name TEXT,
+        total_profit_loss REAL,
+        average_profit REAL,
+        average_loss REAL,
+        win_rate REAL,
+        total_trades INTEGER,
+        profitable_trades INTEGER,
+        unprofitable_trades INTEGER,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )
 ''')
 
