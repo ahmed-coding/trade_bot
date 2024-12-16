@@ -110,19 +110,20 @@ class TradingBot:
                 strategy = strategy_class(data)
             
             strategy.train_model()
-            if strategy.should_enter_trade():
-                confirmations = self.get_confirmations(strategy.timeframe, data, volumes=volumes, moon_phase=moon_phase)
-                if confirmations >= 2:
-                    stop_loss = support_level * (1 - 0.02)
-                    take_profit = resistance_level * (1 + 0.04)
-                    quantity = self.adjust_quantity(symbol, quantity)
+            
+            # if strategy.should_enter_trade():
+                # confirmations = self.get_confirmations(strategy.timeframe, data, volumes=volumes, moon_phase=moon_phase)
+                # if confirmations >= 2:
+                #     stop_loss = support_level * (1 - 0.02)
+                #     take_profit = resistance_level * (1 + 0.04)
+                #     quantity = self.adjust_quantity(symbol, quantity)
                     # try:
                     #     with self.lock:
                     #         self.trade_manager.open_trade(symbol, strategy.trade_type, quantity, strategy_name, stop_loss, take_profit)
                     #     print(f"تم فتح صفقة على {symbol} بناءً على استراتيجية {strategy_name}")
                     # except Exception as e:
                     #     print(f"خطأ أثناء فتح الصفقة: {e}")
-
+            time.sleep(2)
     def get_confirmations(self, trade_type, data, volumes=None, moon_phase=None):
         confirmations = 0
         support_level = min(data)
@@ -239,7 +240,7 @@ class TradingBot:
 if __name__ == "__main__":
     bot = TradingBot(is_virtual=True)
     while True:
-        bot.select_currencies(max_currencies=50)
+        bot.select_currencies(max_currencies=10)
         for currency in bot.selected_currencies:
             
             bot.analyze_currency(currency) # تنفيذ كل دقيقة
