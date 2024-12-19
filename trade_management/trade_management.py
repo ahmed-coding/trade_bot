@@ -128,7 +128,7 @@ class TradeManagement:
         try:
             # الحصول على الرصيد المتاح
             usdt_balance = float(self.client.get_asset_balance(asset="USDT")["free"])
-
+            entry_price = 0
             # تحديد نسبة المخاطرة من الرصيد
             risk_percentage = 0.01  # على سبيل المثال: 1% من الرصيد
             order_value = usdt_balance * risk_percentage
@@ -148,7 +148,7 @@ class TradeManagement:
 
             # محاولة فتح الصفقة
             order = self.client.order_market_buy(symbol=symbol, quantity=quantity)
-            entry_price = float(order['fills'][0]['price'])
+            entry_price = float(order['fills'][0]['price']) 
 
             """فتح صفقة جديدة"""
             self.cursor.execute('''
@@ -166,22 +166,22 @@ class TradeManagement:
                 'take_profit': take_profit,
             }
             print(f"تم فتح صفقة جديدة على {symbol} بسعر دخول {entry_price} وكمية {quantity}")
+            
         except Exception as e:
-            print(f"خطأ أثناء فتح الصفقة: {e}")
+            print(f"خطأ أثناء فتح الصفقة: {e} في عملة {symbol}")
 
-            trade_id = self.cursor.lastrowid
-            self.active_trades[symbol] = {
-                'trade_id': trade_id,
-                'entry_price': entry_price,
-                'quantity': quantity,
-                'stop_loss': stop_loss,
-                'take_profit': take_profit,
-            }
+            # trade_id = self.cursor.lastrowid
+            # self.active_trades[symbol] = {
+            #     'trade_id': trade_id,
+            #     'entry_price': entry_price,
+            #     'quantity': quantity,
+            #     'stop_loss': stop_loss,
+            #     'take_profit': take_profit,
+            # }
 
-            print(f"تم فتح صفقة جديدة على {symbol} بسعر دخول {entry_price} وكمية {quantity}")
+            # print(f"تم فتح صفقة جديدة على {symbol} بسعر دخول {entry_price} وكمية {quantity}")
         
-        except BinanceAPIException as e:
-            print(f"خطأ أثناء فتح الصفقة: {e}")
+
 
             
     def close_trade(self, trade_id, exit_price, result):
@@ -229,7 +229,7 @@ class TradeManagement:
 
     def get_current_price(self, symbol):
         """جلب السعر الحالي من واجهة Binance API"""
-        return float(client.get_symbol_ticker(symbol=symbol)['price'])
+        return float(self.client.get_symbol_ticker(symbol=symbol)['price'])
 
     def get_trade_history(self):
         """استرجاع جميع الصفقات المغلقة للحساب"""

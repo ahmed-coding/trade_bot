@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import os
 import importlib
 class CurrencySelector:
-    def __init__(self, intervals=["1h", "4h", "1d"], min_history_days=30):
+    def __init__(self, intervals=["5m", "15m", "30m"], min_history_days=30):
         """
         :param intervals: قائمة الأطر الزمنية المطلوبة. على سبيل المثال ["1h", "4h", "1d"]
         :param min_history_days: الحد الأدنى من الأيام للبيانات المطلوبة. يمكن تعديله لزيادة المرونة

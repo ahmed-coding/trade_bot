@@ -8,14 +8,14 @@ from account_management import AccountManagement
 from trade_management.trade_management import TradeManagement
 from historical_data_analysis import HistoricalDataAnalyzer
 from currency_selection import CurrencySelector
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from binance.client import Client
 
 # تحميل المتغيرات البيئية
-load_dotenv()
+# load_dotenv()
 
 class TradingBot:
-    def __init__(self, is_virtual=True, enable_short_term=True, enable_long_term=True):
+    def __init__(self, is_virtual=True, enable_short_term=False, enable_long_term=True):
         self.enable_short_term = enable_short_term
         self.enable_long_term = enable_long_term
         self.account_manager = AccountManagement()
@@ -65,7 +65,7 @@ class TradingBot:
         
         return strategies
 
-    def select_currencies(self, max_currencies=50):
+    def select_currencies(self, max_currencies=150):
         selector = CurrencySelector()
         selector.select_currencies(max_currencies)
         self.selected_currencies = selector.get_selected_symbols()
@@ -111,19 +111,20 @@ class TradingBot:
             
             strategy.train_model()
             
-            # if strategy.should_enter_trade():
-                # confirmations = self.get_confirmations(strategy.timeframe, data, volumes=volumes, moon_phase=moon_phase)
-                # if confirmations >= 2:
-                #     stop_loss = support_level * (1 - 0.02)
-                #     take_profit = resistance_level * (1 + 0.04)
-                #     quantity = self.adjust_quantity(symbol, quantity)
-                    # try:
-                    #     with self.lock:
-                    #         self.trade_manager.open_trade(symbol, strategy.trade_type, quantity, strategy_name, stop_loss, take_profit)
-                    #     print(f"تم فتح صفقة على {symbol} بناءً على استراتيجية {strategy_name}")
-                    # except Exception as e:
-                    #     print(f"خطأ أثناء فتح الصفقة: {e}")
+            if strategy.should_enter_trade():
+                confirmations = self.get_confirmations(strategy.timeframe, data, volumes=volumes, moon_phase=moon_phase)
+                if confirmations >= 5:
+                    stop_loss = support_level * (1 - 0.02)
+                    take_profit = resistance_level * (1 + 0.04)
+                    quantity = self.adjust_quantity(symbol, quantity)
+                    try:
+                        with self.lock:
+                            self.trade_manager.open_trade(symbol, strategy.trade_type, quantity, strategy_name, stop_loss, take_profit)
+                        print(f"تم فتح صفقة على {symbol} بناءً على استراتيجية {strategy_name}")
+                    except Exception as e:
+                        print(f"خطأ أثناء فتح الصفقة: {e}")
             time.sleep(2)
+            
     def get_confirmations(self, trade_type, data, volumes=None, moon_phase=None):
         confirmations = 0
         support_level = min(data)
@@ -240,7 +241,7 @@ class TradingBot:
 if __name__ == "__main__":
     bot = TradingBot(is_virtual=True)
     while True:
-        bot.select_currencies(max_currencies=10)
+        bot.select_currencies(max_currencies=150)
         for currency in bot.selected_currencies:
             
             bot.analyze_currency(currency) # تنفيذ كل دقيقة
