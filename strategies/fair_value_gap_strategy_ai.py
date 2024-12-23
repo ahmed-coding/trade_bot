@@ -37,7 +37,7 @@ class FairValueGapStrategyAI:
     def should_enter_trade(self):
         predicted_price = self.predict_gap()
         avg_price = sum(self.data[-5:]) / 5
-        if self.trade_type == "short_term":
+        if self.trade_type == "short":
             return predicted_price < avg_price * 0.98
         else:
             return predicted_price < avg_price * 0.95

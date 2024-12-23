@@ -31,7 +31,7 @@ class SupportResistanceStrategyAI:
         print("تم تدريب وحفظ نموذج Support and Resistance بنجاح")
 
     def should_enter_trade(self):
-        if self.trade_type == "short_term":
+        if self.trade_type == "short":
             return self.data[-1] < self.support_level
         else:
             return self.data[-1] > self.resistance_level

@@ -34,7 +34,7 @@ class OrderBlocksStrategyAI:
 
     def should_enter_trade(self):
         avg_price = self.detect_order_block()
-        return self.data[-1] > avg_price if self.trade_type == "short_term" else self.data[-1] < avg_price
+        return self.data[-1] > avg_price if self.trade_type == "short" else self.data[-1] < avg_price
 
     def update_strategy(self, new_data):
         self.data.extend(new_data)

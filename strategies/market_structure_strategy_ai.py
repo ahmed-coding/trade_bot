@@ -35,7 +35,7 @@ class MarketStructureStrategyAI:
 
     def should_enter_trade(self):
         high, low = self.calculate_structure()
-        return self.data[-1] > high if self.trade_type == "short_term" else self.data[-1] < low
+        return self.data[-1] > high if self.trade_type == "short" else self.data[-1] < low
 
     def update_strategy(self, new_data):
         self.data.extend(new_data)

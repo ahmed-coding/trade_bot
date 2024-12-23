@@ -58,7 +58,7 @@ class FibonacciStrategyAI:
 
     def should_enter_trade(self):
         predicted_price = self.predict_next_price()
-        if self.trade_type == "short_term":
+        if self.trade_type == "short":
             return predicted_price < self.levels["level_38.2"]
         else:
             return predicted_price < self.levels["level_61.8"]

@@ -151,10 +151,12 @@ class TradeManagement:
             entry_price = float(order['fills'][0]['price']) 
 
             """فتح صفقة جديدة"""
+            # INSERT INTO Trades (symbol, entry_price, trade_type, strategy_name, stop_loss, take_profit, quantity, status)
+
             self.cursor.execute('''
-                INSERT INTO Trades (symbol, entry_price, trade_type, strategy_name, stop_loss, take_profit, quantity, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'open')
-            ''', (symbol, entry_price, trade_type, strategy_name, stop_loss, take_profit, quantity))
+                INSERT INTO Trades (symbol, entry_price, trade_type, strategy_name, stop_loss, take_profit, status)
+                VALUES (?, ?, ?, ?, ?, ?,  'open')
+            ''', (symbol, entry_price, trade_type, strategy_name, stop_loss, take_profit))
             self.conn.commit()
             
             trade_id = self.cursor.lastrowid

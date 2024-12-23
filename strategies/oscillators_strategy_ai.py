@@ -34,7 +34,7 @@ class OscillatorsStrategyAI:
 
     def should_enter_trade(self):
         oscillator = self.calculate_oscillator()
-        return oscillator > 0 if self.trade_type == "short_term" else oscillator < 0
+        return oscillator > 0 if self.trade_type == "short" else oscillator < 0
 
     def update_strategy(self, new_data):
         self.data.extend(new_data)

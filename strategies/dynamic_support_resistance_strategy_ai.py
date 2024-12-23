@@ -35,7 +35,7 @@ class DynamicSupportResistanceStrategyAI:
 
     def should_enter_trade(self):
         dynamic_level = self.calculate_dynamic_level()
-        if self.trade_type == "short_term":
+        if self.trade_type == "short":
             return self.data[-1] > dynamic_level
         else:
             return self.data[-1] < dynamic_level

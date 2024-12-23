@@ -41,7 +41,7 @@ class DivergenceStrategyAI:
 
     def should_enter_trade(self):
         divergence = self.calculate_divergence()
-        return divergence > 0 if self.trade_type == "short_term" else divergence < 0
+        return divergence > 0 if self.trade_type == "short" else divergence < 0
 
     def update_strategy(self, new_data, new_volumes):
         self.data.extend([float(value) for value in new_data])

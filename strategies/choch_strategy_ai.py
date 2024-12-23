@@ -20,7 +20,7 @@ class ChochStrategyAI:
 
     def detect_change_of_character(self):
         avg_price = sum(self.data[-10:]) / 10
-        return self.data[-1] > avg_price if self.trade_type == "short_term" else self.data[-1] < avg_price
+        return self.data[-1] > avg_price if self.trade_type == "short" else self.data[-1] < avg_price
 
     def train_model(self):
         features = np.array([self.data[i-10:i] for i in range(10, len(self.data))])

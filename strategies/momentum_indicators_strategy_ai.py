@@ -35,7 +35,7 @@ class MomentumIndicatorsStrategyAI:
 
     def should_enter_trade(self):
         momentum = self.calculate_momentum()
-        return momentum > 0 if self.trade_type == "short_term" else momentum < 0
+        return momentum > 0 if self.trade_type == "short" else momentum < 0
 
     def update_strategy(self, new_data):
         self.data.extend(new_data)

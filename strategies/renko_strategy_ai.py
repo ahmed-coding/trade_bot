@@ -42,7 +42,7 @@ class RenkoStrategyAI:
     def should_enter_trade(self):
         predicted_price = self.predict_next_brick()
         last_brick = self.calculate_renko()[-1]
-        if self.trade_type == "short_term":
+        if self.trade_type == "short":
             return predicted_price > last_brick
         else:
             return predicted_price < last_brick

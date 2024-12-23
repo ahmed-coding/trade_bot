@@ -33,7 +33,7 @@ class GannFanStrategyAI:
 
     def should_enter_trade(self):
         gann_angle = self.calculate_gann_angle()
-        return gann_angle > 0 if self.trade_type == "short_term" else gann_angle < 0
+        return gann_angle > 0 if self.trade_type == "short" else gann_angle < 0
 
     def update_strategy(self, new_data):
         self.data.extend(new_data)

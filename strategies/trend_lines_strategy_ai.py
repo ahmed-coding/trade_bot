@@ -33,7 +33,7 @@ class TrendLinesStrategyAI:
 
     def should_enter_trade(self):
         trend_slope = self.calculate_trend_line()
-        return trend_slope > 0 if self.trade_type == "short_term" else trend_slope < 0
+        return trend_slope > 0 if self.trade_type == "short" else trend_slope < 0
 
     def update_strategy(self, new_data):
         self.data.extend(new_data)

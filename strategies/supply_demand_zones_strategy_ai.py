@@ -35,7 +35,7 @@ class SupplyDemandZonesStrategyAI:
 
     def should_enter_trade(self):
         high, low = self.calculate_supply_demand_zones()
-        return self.data[-1] < low if self.trade_type == "short_term" else self.data[-1] > high
+        return self.data[-1] < low if self.trade_type == "short" else self.data[-1] > high
 
     def update_strategy(self, new_data):
         self.data.extend(new_data)

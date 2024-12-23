@@ -8,14 +8,14 @@ from account_management import AccountManagement
 from trade_management.trade_management import TradeManagement
 from historical_data_analysis import HistoricalDataAnalyzer
 from currency_selection import CurrencySelector
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 from binance.client import Client
 
 # تحميل المتغيرات البيئية
-# load_dotenv()
+load_dotenv()
 
 class TradingBot:
-    def __init__(self, is_virtual=True, enable_short_term=False, enable_long_term=True):
+    def __init__(self, is_virtual=True, enable_short_term=True, enable_long_term=True):
         self.enable_short_term = enable_short_term
         self.enable_long_term = enable_long_term
         self.account_manager = AccountManagement()
@@ -35,7 +35,7 @@ class TradingBot:
         balance = 10000 if is_virtual else 1000
         risk_level = 0.01
         return self.account_manager.get_or_create_account(account_type, balance, risk_level)
-
+    
     def load_strategies(self):
         strategies = {}
         strategies_path = "./strategies"
@@ -113,7 +113,7 @@ class TradingBot:
             
             if strategy.should_enter_trade():
                 confirmations = self.get_confirmations(strategy.timeframe, data, volumes=volumes, moon_phase=moon_phase)
-                if confirmations >= 5:
+                if confirmations >= 7:
                     stop_loss = support_level * (1 - 0.02)
                     take_profit = resistance_level * (1 + 0.04)
                     quantity = self.adjust_quantity(symbol, quantity)
@@ -146,6 +146,7 @@ class TradingBot:
                 continue
             
             if strategy.timeframe == trade_type and strategy.should_enter_trade():
+            # if strategy.should_enter_trade():
                 confirmations += 1
         return confirmations
 
@@ -241,7 +242,7 @@ class TradingBot:
 if __name__ == "__main__":
     bot = TradingBot(is_virtual=True)
     while True:
-        bot.select_currencies(max_currencies=150)
+        bot.select_currencies(max_currencies=100)
         for currency in bot.selected_currencies:
             
             bot.analyze_currency(currency) # تنفيذ كل دقيقة
