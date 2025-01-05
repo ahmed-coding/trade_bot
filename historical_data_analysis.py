@@ -93,7 +93,7 @@ class HistoricalDataAnalyzer:
                 df["close"] = df["close"].astype(float)
                 self.data[interval] = df
                 print(f"تم جمع البيانات التاريخية للإطار {interval} بنجاح.")
-
+    
     def get_data_for_training(self):
         """إرجاع البيانات لجميع الأطر الزمنية الصالحة للاستخدام في التدريب"""
         return {interval: df for interval, df in self.data.items() if df is not None}
@@ -101,6 +101,15 @@ class HistoricalDataAnalyzer:
     def get_close_prices(self, interval):
         """إرجاع أسعار الإغلاق للإطار المحدد إذا كانت البيانات متوفرة"""
         return self.data[interval]["close"].tolist() if self.data.get(interval) is not None else []
+
+
+    def get_trad_close_prices(self, client,symbol, limit, interval):
+        """إرجاع أسعار الإغلاق للإطار المحدد إذا كانت البيانات متوفرة"""
+        
+        klines = client.get_klines(symbol=symbol, interval=interval, limit=limit)
+        closing_prices = [float(kline[4]) for kline in klines]
+            
+        return closing_prices
 
 
 class NewCurrencyAnalyzer:

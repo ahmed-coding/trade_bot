@@ -10,6 +10,7 @@ from historical_data_analysis import HistoricalDataAnalyzer
 from currency_selection import CurrencySelector
 from dotenv import load_dotenv
 from binance.client import Client
+from helper import request_load
 
 # تحميل المتغيرات البيئية
 load_dotenv()
@@ -22,13 +23,17 @@ class TradingBot:
         self.trade_manager = TradeManagement(is_virtual=is_virtual)
         self.is_virtual = is_virtual
         self.strategies = self.load_strategies()
-        self.selected_currencies = []
+        # self.selected_currencies = []
+        self.selected_currencies = request_load.get_futuer_top_symbols(200,[])
         self.account_id, _, _, _ = self.setup_account(is_virtual)
-        self.client = Client(os.getenv("BINANCE_API_KEY"), os.getenv("BINANCE_API_SECRET"))
-        self.client.API_URL = 'https://testnet.binance.vision/api' if is_virtual else 'https://api.binance.com'
+        self.client = Client(os.getenv("BINANCE_API_KEY"), os.getenv("BINANCE_API_SECRET"), requests_params={'timeout':90})
+        # self.client.API_URL = 'https://testnet.binance.vision/api' if is_virtual else 'https://api.binance.com'
+        # self.client.API_URL = 'https://testnet.binance.vision/api' if is_virtual else 'https://api.binance.com'
         self.excluded_symbols = set()
         self.lock = threading.Lock()
         self.current_prices = {} 
+        self.kline_limit = 100
+        self.kline_intervel = self.client.KLINE_INTERVAL_5MINUTE
 
     def setup_account(self, is_virtual):
         account_type = "virtual" if is_virtual else "real"
@@ -85,11 +90,11 @@ class TradingBot:
                 return step_size
         return None
 
-    def run_strategy(self, strategy_name, data, symbol, volumes=None, moon_phase=None, quantity=0.001):
+    def run_strategy(self, strategy_name, data, tred_data, symbol, volumes=None, moon_phase=None, quantity=0.001):
         strategy_class = self.strategies.get(strategy_name)
         if strategy_class:
-            support_level = min(data)
-            resistance_level = max(data)
+            support_level = min(tred_data)
+            resistance_level = max(tred_data)
 
             is_short_term = strategy_class.timeframe == 'short'
             is_long_term = strategy_class.timeframe == 'long'
@@ -112,7 +117,7 @@ class TradingBot:
             strategy.train_model()
             
             if strategy.should_enter_trade():
-                confirmations = self.get_confirmations(strategy.timeframe, data, volumes=volumes, moon_phase=moon_phase)
+                confirmations = self.get_confirmations(strategy.timeframe, tred_data, volumes=volumes, moon_phase=moon_phase)
                 if confirmations >= 7:
                     stop_loss = support_level * (1 - 0.02)
                     take_profit = resistance_level * (1 + 0.04)
@@ -120,10 +125,10 @@ class TradingBot:
                     try:
                         with self.lock:
                             self.trade_manager.open_trade(symbol, strategy.trade_type, quantity, strategy_name, stop_loss, take_profit)
-                        print(f"تم فتح صفقة على {symbol} بناءً على استراتيجية {strategy_name}")
+                        print(f"تم فتح صفقة على {symbol} بناءً على استراتيجية {strategy_name} في وضع {strategy.trade_type}")
                     except Exception as e:
                         print(f"خطأ أثناء فتح الصفقة: {e}")
-            time.sleep(2)
+            # time.sleep(2)
             
     def get_confirmations(self, trade_type, data, volumes=None, moon_phase=None):
         confirmations = 0
@@ -167,14 +172,29 @@ class TradingBot:
         if data is None:
             print(f"البيانات غير كافية للرمز {currency}، تجاوز التحليل.")
             return
-
+        klines = self.client.get_klines(symbol=currency, interval=self.kline_intervel, limit=self.kline_limit)
+        tred_close_prices = [float(kline[4]) for kline in klines]
+            
+        # tred_close_prices = analyzer.get_trad_close_prices(client=self.client, symbol=currency, limit=self.kline_limit, interval=self.kline_intervel)
+        
+        # volumes=[]
         for interval in analyzer.intervals:
-            print(f"تحليل البيانات للرمز {currency}، الإطار الزمني: {interval}")
-            close_prices = analyzer.get_close_prices(interval)
-            volumes = data[interval]["volume"].tolist() if "volume" in data[interval].columns else None
-
-            for strategy_name in self.strategies.keys():
-                self.run_strategy(strategy_name, close_prices, currency, volumes=volumes)
+            # if data in None:
+            #     break
+            volumes_data = data.get(interval) if data is not None else None
+            
+            if volumes_data is not None:
+                volumes =volumes_data["volume"].tolist() if "volume" in data[interval].columns else None
+                print(f"تحليل البيانات للرمز {currency}، الإطار الزمني: {self.kline_intervel}")
+                close_prices = analyzer.get_close_prices(interval=interval)
+            # tred_close_prices = analyzer.get_trad_close_prices(client=self.client, symbol=currency,limit=self.kline_limit,interval=self.kline_intervel)
+            # tred_close_prices = analyzer.get_trad_close_prices(client=self.client,symbol=currency,limit=self.kline_limit,interval=self.kline_intervel)
+            
+                for strategy_name in self.strategies.keys():
+                    self.run_strategy(strategy_name, close_prices,tred_close_prices, currency, volumes=volumes)
+                    
+        # strategy_name = self.strategies.keys()[0]
+        # self.run_strategy(strategy_name, close_prices,tred_close_prices, currency, volumes=volumes)
 
 
 
@@ -240,9 +260,9 @@ class TradingBot:
 
 
 if __name__ == "__main__":
-    bot = TradingBot(is_virtual=True)
+    bot = TradingBot(is_virtual=False)
     while True:
-        bot.select_currencies(max_currencies=100)
+        # bot.select_currencies(max_currencies=100)
         for currency in bot.selected_currencies:
             
             bot.analyze_currency(currency) # تنفيذ كل دقيقة
